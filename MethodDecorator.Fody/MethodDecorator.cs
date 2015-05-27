@@ -11,6 +11,7 @@ using Mono.Cecil.Cil;
 namespace MethodDecoratorEx.Fody {
     public class MethodDecorator {
         private readonly ReferenceFinder _referenceFinder;
+        private int _flowBehavior = 1;
 
         public MethodDecorator(ModuleDefinition moduleDefinition) {
             this._referenceFinder = new ReferenceFinder(moduleDefinition);
@@ -39,6 +40,15 @@ namespace MethodDecoratorEx.Fody {
             var onEntryMethodRef = this._referenceFinder.GetMethodReference(attribute.AttributeType, md => md.Name == "OnEntry");
             var onExitMethodRef = this._referenceFinder.GetMethodReference(attribute.AttributeType, md => md.Name == "OnExit");
             var onExceptionMethodRef = this._referenceFinder.GetMethodReference(attribute.AttributeType, md => md.Name == "OnException");
+
+
+            if (attribute.HasConstructorArguments)
+            {
+                var ctorArgs = attribute.ConstructorArguments;
+                CustomAttributeArgument attributeArgument = ctorArgs.FirstOrDefault();
+                _flowBehavior = attributeArgument.Value as int? ?? 0;
+            }
+
 
             var processor = method.Body.GetILProcessor();
             var methodBodyFirstInstruction = method.Body.Instructions.First();
@@ -86,7 +96,7 @@ namespace MethodDecoratorEx.Fody {
             var methodBodyReturnInstructions = GetMethodBodyReturnInstructions(processor, retvalVariableDefinition);
             var methodBodyReturnInstruction = methodBodyReturnInstructions.First();
             var tryCatchLeaveInstructions = GetTryCatchLeaveInstructions(processor, methodBodyReturnInstruction);
-            var catchHandlerInstructions = GetCatchHandlerInstructions(processor, attributeVariableDefinition, exceptionVariableDefinition, onExceptionMethodRef);
+            var catchHandlerInstructions = GetCatchHandlerInstructions(processor, attributeVariableDefinition, exceptionVariableDefinition, onExceptionMethodRef, methodBodyReturnInstruction, _flowBehavior);
 
             ReplaceRetInstructions(processor, saveRetvalInstructions.Concat(callOnExitInstructions).First());
 
@@ -273,18 +283,36 @@ namespace MethodDecoratorEx.Fody {
             return new[] { processor.Create(OpCodes.Leave_S, methodBodyReturnInstruction) };
         }
 
-        private static List<Instruction> GetCatchHandlerInstructions(ILProcessor processor, VariableDefinition attributeVariableDefinition, VariableDefinition exceptionVariableDefinition, MethodReference onExceptionMethodRef) {
+        private static List<Instruction> GetCatchHandlerInstructions(ILProcessor processor, VariableDefinition attributeVariableDefinition, VariableDefinition exceptionVariableDefinition,
+            MethodReference onExceptionMethodRef, Instruction methodBodyReturnInstruction, int flowBehavior)
+        {
             // Store the exception in __fody$exception
             // Call __fody$attribute.OnExcetion("{methodName}", __fody$exception)
             // rethrow
-            return new List<Instruction>
-                   {
-                       processor.Create(OpCodes.Stloc_S, exceptionVariableDefinition),
-                       processor.Create(OpCodes.Ldloc_S, attributeVariableDefinition),
-                       processor.Create(OpCodes.Ldloc_S, exceptionVariableDefinition),
-                       processor.Create(OpCodes.Callvirt, onExceptionMethodRef),
-                       processor.Create(OpCodes.Rethrow)
-                   };
+
+            // Store the exception in __fody$exception
+            // Call __fody$attribute.OnExcetion("{methodName}", __fody$exception)
+            // rethrow
+
+            List<Instruction> catchHandlerInstructions = new List<Instruction>
+            {
+                processor.Create(OpCodes.Stloc_S, exceptionVariableDefinition),
+                processor.Create(OpCodes.Ldloc_S, attributeVariableDefinition),
+                processor.Create(OpCodes.Ldloc_S, exceptionVariableDefinition),
+                processor.Create(OpCodes.Callvirt, onExceptionMethodRef)
+            };
+
+            switch (flowBehavior)
+            {
+                case 1:
+                    catchHandlerInstructions.Add(processor.Create(OpCodes.Rethrow));
+                    break;
+                case 2:
+                    catchHandlerInstructions.Add(processor.Create(OpCodes.Leave_S, methodBodyReturnInstruction));
+                    break;
+            }
+
+            return catchHandlerInstructions;
         }
 
         private static void ReplaceRetInstructions(ILProcessor processor, Instruction methodEpilogueFirstInstruction) {

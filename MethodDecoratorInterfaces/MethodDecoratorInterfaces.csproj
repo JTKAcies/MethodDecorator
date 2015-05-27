@@ -40,6 +40,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FlowBehavior.cs" />
     <Compile Include="IMethodDecorator.cs" />
     <Compile Include="MethodDecoratorAttributeBase.cs">
       <SubType>Code</SubType>
