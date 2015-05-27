@@ -1,14 +1,23 @@
 using System;
 using System.Reflection;
 
-namespace MethodDecoratorInterfaces {
+namespace MethodDecoratorInterfaces
+{
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Constructor)]
-    public class MethodDecoratorAttribute : Attribute, IMethodDecorator {
+    public class MethodDecoratorAttribute : Attribute, IMethodDecorator
+    {
         private readonly int _flowBehavior;
 
-        public MethodDecoratorAttribute(FlowBehavior flowBehavior= FlowBehavior.RethrowException):this((int)flowBehavior)
+        public MethodDecoratorAttribute(FlowBehavior flowBehavior = FlowBehavior.RethrowException)
+            : this((int)flowBehavior)
         {
-            
+
+        }
+
+        public MethodDecoratorAttribute()
+            : this((int)FlowBehavior.RethrowException)
+        {
+
         }
 
         private MethodDecoratorAttribute(int flowBehavior)
@@ -16,12 +25,12 @@ namespace MethodDecoratorInterfaces {
             _flowBehavior = flowBehavior;
         }
 
-        public virtual void Init(object instance, MethodBase method, object[] args) {}
+        public virtual void Init(object instance, MethodBase method, object[] args) { }
 
-        public virtual void OnEntry() {}
+        public virtual void OnEntry() { }
 
-        public virtual void OnExit() {}
+        public virtual void OnExit() { }
 
-        public virtual void OnException(Exception exception) {}
+        public virtual void OnException(Exception exception) { }
     }
 }
