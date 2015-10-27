@@ -8,14 +8,14 @@ namespace MethodDecoratorInterfaces
     {
         private readonly int _flowBehavior;
 
-        public MethodDecoratorAttribute(FlowBehavior flowBehavior = FlowBehavior.RethrowException)
+        public MethodDecoratorAttribute(FlowBehavior flowBehavior = FlowBehavior.Continue)
             : this((int)flowBehavior)
         {
 
         }
 
         public MethodDecoratorAttribute()
-            : this((int)FlowBehavior.RethrowException)
+            : this((int)FlowBehavior.Continue)
         {
 
         }

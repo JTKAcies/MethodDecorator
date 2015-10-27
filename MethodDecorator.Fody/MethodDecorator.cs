@@ -11,7 +11,7 @@ using Mono.Cecil.Cil;
 namespace MethodDecoratorEx.Fody {
     public class MethodDecorator {
         private readonly ReferenceFinder _referenceFinder;
-        private int _flowBehavior = 1;
+        private int _flowBehavior = 2;
 
         public MethodDecorator(ModuleDefinition moduleDefinition) {
             this._referenceFinder = new ReferenceFinder(moduleDefinition);
@@ -46,7 +46,7 @@ namespace MethodDecoratorEx.Fody {
             {
                 var ctorArgs = attribute.ConstructorArguments;
                 CustomAttributeArgument attributeArgument = ctorArgs.FirstOrDefault();
-                _flowBehavior = attributeArgument.Value as int? ?? 0;
+                _flowBehavior = int.Parse(attributeArgument.Value.ToString());
             }
 
 
